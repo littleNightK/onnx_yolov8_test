@@ -21,12 +21,21 @@
 </head>
 
 <body>
-    <video id="videoElement" width="640" height="480" autoplay></video>
+    <video id="videoElement" width="640" height="480" autoplay playsinline muted></video>
     <button id="detectButton">Detect Objects</button>
     <canvas></canvas>
     <script>
         const videoElement = document.getElementById('videoElement');
         const detectButton = document.getElementById('detectButton');
+
+        navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'environment'
+            }
+        })
+            .then(stream => {
+                videoElement.srcObject = stream;
+            });
 
         // Get webcam feed
         navigator.mediaDevices.getUserMedia({ video: true })
