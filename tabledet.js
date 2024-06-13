@@ -150,6 +150,8 @@ detectButton.addEventListener("click", async () => {
     .getUserMedia({
       video: {
         facingMode: { ideal: "environment" },
+        width: { ideal: 480 },
+        height: { ideal: 640 },
       },
     })
     .then((stream) => {
