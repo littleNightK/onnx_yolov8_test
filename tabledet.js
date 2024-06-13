@@ -137,38 +137,35 @@ window.addEventListener("DOMContentLoaded", (event) => {
   });
 });
 
-
-
-
 //Camera script
 const videoElement = document.getElementById("video-table");
 const detectButton = document.querySelector(".start-camera");
-const boundingBoxCanvas = document.getElementById('boundingBoxCanvas');
-const boundingBoxCtx = boundingBoxCanvas.getContext('2d');
+const boundingBoxCanvas = document.getElementById("boundingBoxCanvas");
+const boundingBoxCtx = boundingBoxCanvas.getContext("2d");
 
 detectButton.addEventListener("click", async () => {
   document.getElementById("videoContainer").style.display = "block";
 
   navigator.mediaDevices
-  .getUserMedia({ 
-      video: { 
-          facingMode: { ideal: "environment" } 
-      } 
-  })
-  .then((stream) => {
-    const videoElement = document.getElementById("video-table");
-    videoElement.srcObject = stream;
-  })
-  .catch((error) => {
-    console.error("Error accessing camera:", error);
-  });
+    .getUserMedia({
+      video: {
+        facingMode: { ideal: "environment" },
+      },
+    })
+    .then((stream) => {
+      const videoElement = document.getElementById("video-table");
+      videoElement.srcObject = stream;
+    })
+    .catch((error) => {
+      console.error("Error accessing camera:", error);
+    });
 
   videoElement.onloadedmetadata = () => {
     const canvas = document.createElement("canvas");
     canvas.width = videoElement.videoWidth;
     canvas.height = videoElement.videoHeight;
     const ctx = canvas.getContext("2d");
-  
+
     boundingBoxCanvas.width = videoElement.videoWidth;
     boundingBoxCanvas.height = videoElement.videoHeight;
 
@@ -194,24 +191,29 @@ detectButton.addEventListener("click", async () => {
  * @param boxes Array of bounding boxes in format [[x1,y1,x2,y2,object_type,probability],...]
  */
 function draw_image_and_boxes(file, boxes) {
-    const boundingBoxCanvas = document.getElementById('boundingBoxCanvas');
-    const boundingBoxCtx = boundingBoxCanvas.getContext('2d');
-  
-    // Clear the canvas before drawing new bounding boxes
-    boundingBoxCtx.clearRect(0, 0, boundingBoxCanvas.width, boundingBoxCanvas.height);
-  
-    boundingBoxCtx.strokeStyle = "#00FF00";
-    boundingBoxCtx.lineWidth = 3;
-    boundingBoxCtx.font = "18px serif";
-    boxes.forEach(([x1, y1, x2, y2, label]) => {
-      boundingBoxCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-      boundingBoxCtx.fillStyle = "#00ff00";
-      const width = boundingBoxCtx.measureText(label).width;
-      boundingBoxCtx.fillRect(x1, y1, width + 10, 25);
-      boundingBoxCtx.fillStyle = "#000000";
-      boundingBoxCtx.fillText(label, x1, y1 + 18);
-    });
-  }
+  const boundingBoxCanvas = document.getElementById("boundingBoxCanvas");
+  const boundingBoxCtx = boundingBoxCanvas.getContext("2d");
+
+  // Clear the canvas before drawing new bounding boxes
+  boundingBoxCtx.clearRect(
+    0,
+    0,
+    boundingBoxCanvas.width,
+    boundingBoxCanvas.height
+  );
+
+  boundingBoxCtx.strokeStyle = "#00FF00";
+  boundingBoxCtx.lineWidth = 3;
+  boundingBoxCtx.font = "18px serif";
+  boxes.forEach(([x1, y1, x2, y2, label]) => {
+    boundingBoxCtx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+    boundingBoxCtx.fillStyle = "#00ff00";
+    const width = boundingBoxCtx.measureText(label).width;
+    boundingBoxCtx.fillRect(x1, y1, width + 10, 25);
+    boundingBoxCtx.fillStyle = "#000000";
+    boundingBoxCtx.fillText(label, x1, y1 + 18);
+  });
+}
 
 /**
  * Function receives an image, passes it through YOLOv8 neural network
@@ -292,6 +294,9 @@ function process_output(output, img_width, img_height) {
     if (prob < 0.5) {
       continue;
     }
+    if (class_id !== 8) {
+      continue;
+    }
     const label = yolo_classes[class_id];
     const xc = output[index];
     const yc = output[8400 + index];
@@ -304,13 +309,11 @@ function process_output(output, img_width, img_height) {
     boxes.push([x1, y1, x2, y2, label, prob]);
   }
 
-  boxes = boxes.sort((box1, box2) => box2[5] - box1[5]);
-  const result = [];
-  while (boxes.length > 0) {
-    result.push(boxes[0]);
-    boxes = boxes.filter((box) => iou(boxes[0], box) < 0.7);
-  }
-  return result;
+  // Sort boxes by probability in descending order
+  boxes.sort((box1, box2) => box2[5] - box1[5]);
+
+  // Return only the highest-confidence bounding box
+  return boxes.length > 0 ? [boxes[0]] : [];
 }
 
 /**
@@ -360,8 +363,19 @@ function intersection(box1, box2) {
 /**
  * Array of YOLOv8 class labels
  */
-const yolo_classes = ['Caption', 'Footnote', 'Formula', 'List-item', 'Page-footer', 'Page-header', 'Picture', 'Section-header', 'Table', 'Text', 'Title'];
-
+const yolo_classes = [
+  "Caption",
+  "Footnote",
+  "Formula",
+  "List-item",
+  "Page-footer",
+  "Page-header",
+  "Picture",
+  "Section-header",
+  "Table",
+  "Text",
+  "Title",
+];
 
 document.getElementById("cancel").addEventListener("click", function () {
   location.reload();
