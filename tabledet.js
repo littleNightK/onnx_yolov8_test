@@ -286,7 +286,7 @@ async function run_model(input) {
 function process_output(output, img_width, img_height) {
   let boxes = [];
   for (let index = 0; index < 8400; index++) {
-    const [class_id, prob] = [...Array(1).keys()]
+    const [class_id, prob] = [...Array(11).keys()]
       .map((col) => [col, output[8400 * (col + 4) + index]])
       .reduce((accum, item) => (item[1] > accum[1] ? item : accum), [0, 0]);
     if (prob < 0.5) {
@@ -360,7 +360,7 @@ function intersection(box1, box2) {
 /**
  * Array of YOLOv8 class labels
  */
-const yolo_classes = ['Table'];
+const yolo_classes = ['Caption', 'Footnote', 'Formula', 'List-item', 'Page-footer', 'Page-header', 'Picture', 'Section-header', 'Table', 'Text', 'Title'];
 
 
 document.getElementById("cancel").addEventListener("click", function () {
