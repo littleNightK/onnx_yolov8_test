@@ -261,7 +261,7 @@ async function prepare_input(buf) {
 }
 
 // Move the model loading outside of the run_model function
-const modelPromise = ort.InferenceSession.create("models/yolov8n-layout.onnx");
+const modelPromise = ort.InferenceSession.create("yolov8n-layout.onnx");
 
 /**
  * Function used to pass provided input tensor to YOLOv8 neural network and return result
