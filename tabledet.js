@@ -150,8 +150,6 @@ detectButton.addEventListener("click", async () => {
     .getUserMedia({
       video: {
         facingMode: { ideal: "environment" },
-        width: { ideal: 480 },
-        height: { ideal: 640 },
       },
     })
     .then((stream) => {
@@ -311,11 +309,13 @@ function process_output(output, img_width, img_height) {
     boxes.push([x1, y1, x2, y2, label, prob]);
   }
 
-  // Sort boxes by probability in descending order
-  boxes.sort((box1, box2) => box2[5] - box1[5]);
-
-  // Return only the highest-confidence bounding box
-  return boxes.length > 0 ? [boxes[0]] : [];
+  boxes = boxes.sort((box1, box2) => box2[5] - box1[5]);
+  const result = [];
+  while (boxes.length > 0) {
+    result.push(boxes[0]);
+    boxes = boxes.filter((box) => iou(boxes[0], box) < 0.7);
+  }
+  return result;
 }
 
 /**
