@@ -137,58 +137,111 @@ window.addEventListener("DOMContentLoaded", (event) => {
   });
 });
 
+function isVideoFeedActive() {
+  const videoElement = document.getElementById("video-table");
+  if (videoElement && videoElement.srcObject) {
+    const tracks = videoElement.srcObject.getTracks();
+    return tracks && tracks.some(track => track.readyState === 'live');
+  }
+  return false;
+}
+
+
 //Camera script
 const videoElement = document.getElementById("video-table");
-const detectButton = document.querySelector(".start-camera");
 const boundingBoxCanvas = document.getElementById("boundingBoxCanvas");
 const boundingBoxCtx = boundingBoxCanvas.getContext("2d");
+const startCameraButton = document.querySelector(".start-camera");
 
-detectButton.addEventListener("click", async () => {
-  document.getElementById("videoContainer").style.display = "block";
-
-  navigator.mediaDevices
-    .getUserMedia({
-      video: {
-        facingMode: { ideal: "environment" },
-        width: { ideal: 480 },
-        height: { ideal: 640 },
-      },
-    })
-    .then((stream) => {
-      const videoElement = document.getElementById("video-table");
-      videoElement.srcObject = stream;
-    })
-    .catch((error) => {
-      console.error("Error accessing camera:", error);
-    });
-
-  videoElement.onloadedmetadata = () => {
+startCameraButton.addEventListener("click", async () => {
+  if (isVideoFeedActive()) {
+    // If the camera is active, perform the capture functionality
+    const videoElement = document.getElementById("video-table");
     const canvas = document.createElement("canvas");
     canvas.width = videoElement.videoWidth;
     canvas.height = videoElement.videoHeight;
     const ctx = canvas.getContext("2d");
 
-    boundingBoxCanvas.width = videoElement.videoWidth;
-    boundingBoxCanvas.height = videoElement.videoHeight;
+    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
 
-    const detectFrame = async () => {
-      ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-      const imageBlob = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg")
+    const boxes = await detect_objects_on_image(
+      await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg"))
+    );
+
+    boxes.forEach(([x1, y1, x2, y2]) => {
+      const captureCanvas = document.createElement("canvas");
+      captureCanvas.width = x2 - x1;
+      captureCanvas.height = y2 - y1;
+      const captureCtx = captureCanvas.getContext("2d");
+
+      captureCtx.drawImage(
+        canvas,
+        x1,
+        y1,
+        x2 - x1,
+        y2 - y1,
+        0,
+        0,
+        x2 - x1,
+        y2 - y1
       );
-      const boxes = await detect_objects_on_image(imageBlob);
-      draw_image_and_boxes(imageBlob, boxes);
 
-      requestAnimationFrame(detectFrame); // Detect objects in the next frame
+      const capturedImageDataURL = captureCanvas.toDataURL("image/jpeg");
+      const imgElement = document.createElement("img");
+      imgElement.src = capturedImageDataURL;
+      imgElement.style.margin = "10px";
+
+      document.getElementById("capturedImagesContainer").appendChild(imgElement);
+    });
+  } else {
+    // If the camera is not active, start the camera
+    document.getElementById("videoContainer").style.display = "block";
+
+    navigator.mediaDevices
+      .getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { exact: 480 },
+          height: { exact: 640 },
+        },
+      })
+      .then((stream) => {
+        const videoElement = document.getElementById("video-table");
+        videoElement.srcObject = stream;
+      })
+      .catch((error) => {
+        console.error("Error accessing camera:", error);
+      });
+
+    videoElement.onloadedmetadata = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = videoElement.videoWidth;
+      canvas.height = videoElement.videoHeight;
+      const ctx = canvas.getContext("2d");
+
+      boundingBoxCanvas.width = videoElement.videoWidth;
+      boundingBoxCanvas.height = videoElement.videoHeight;
+
+      const detectFrame = async () => {
+        ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+        const imageBlob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, "image/jpeg")
+        );
+        const boxes = await detect_objects_on_image(imageBlob);
+        draw_image_and_boxes(imageBlob, boxes);
+
+        requestAnimationFrame(detectFrame); // Detect objects in the next frame
+      };
+
+      detectFrame(); // Start detecting objects in frames
     };
-
-    detectFrame(); // Start detecting objects in frames
-  };
+  }
 });
+
 /**
  * Function draws the image from provided file
  * and bounding boxes of detected objects on
- * top of the image
+ * top of the image. It also captures and saves the image of the detected object.
  * @param file Uploaded file object
  * @param boxes Array of bounding boxes in format [[x1,y1,x2,y2,object_type,probability],...]
  */
