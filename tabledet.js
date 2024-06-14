@@ -155,6 +155,13 @@ const startCameraButton = document.querySelector(".start-camera");
 
 startCameraButton.addEventListener("click", async () => {
   if (isVideoFeedActive()) {
+    
+    // Clear existing images
+    const capturedImagesContainer = document.getElementById("capturedImagesContainer");
+    while (capturedImagesContainer.firstChild) {
+      capturedImagesContainer.removeChild(capturedImagesContainer.firstChild);
+    }
+
     // If the camera is active, perform the capture functionality
     const videoElement = document.getElementById("video-table");
     const canvas = document.createElement("canvas");
@@ -201,8 +208,8 @@ startCameraButton.addEventListener("click", async () => {
       .getUserMedia({
         video: {
           facingMode: { ideal: "environment" },
-          width: { exact: 480 },
-          height: { exact: 640 },
+          height: { exact: 480 },
+          width: { exact: 640 },
         },
       })
       .then((stream) => {
